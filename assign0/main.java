@@ -8,7 +8,7 @@ public class main {
 		String[] s = new String[1];
 		String[] t = new String[1];
 
-		s[0] = "I like strings, pffft, be strings can't";
+		s[0] = "I be\n like strings, pffft, strings can't";
 		System.out.println(s[0]);
 		str.Compress(s, t);
 		
