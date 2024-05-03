@@ -8,11 +8,13 @@ public class main {
 		String[] s = new String[1];
 		String[] t = new String[1];
 
-		s[0] = "I be\n like strings, pffft, strings can't";
-		System.out.println(s[0]);
-		str.Compress(s, t);
+		s[0] = "romeo , and then, and juliet\r\n";
 		
+		str.Compress(s, t);
+		System.out.println(s[0]);
 		str.Decompress(s, t);
+		System.out.println(s[0]);
+
 	}
 
 }
