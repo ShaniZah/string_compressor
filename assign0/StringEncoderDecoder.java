@@ -16,45 +16,43 @@ import base.Compressor;
 
 public class StringEncoderDecoder implements Compressor {
 
-	private HashMap<String, Integer> words_count_map;
-	private HashMap<String, Integer> most_common_words;
+	private HashMap<String, Integer> wordsCountMap;
+	private HashMap<String, Integer> wordsToCodeMap; // most common 200 words with code
 	private ArrayList<String> allWords;
 
 	public StringEncoderDecoder() {
-		words_count_map = new HashMap<>(); // string = words, int = appearances
-		most_common_words = new HashMap<>(); // string = words, int = coded value
+		wordsCountMap = new HashMap<>();
+		wordsToCodeMap = new HashMap<>();
 		allWords = new ArrayList<>();
 	}
 
 	@Override
 	public void Compress(String[] input_names, String[] output_names) {
-
 		// split all words frm their punctuation chars and count their occurances
 		String[] words = input_names[0].split(" "); // initial split
 		countWordFrequency(words);
+		fillWordsCountMap();
 		// count and append coded index to the 200 most common words
-		createIndexMapping();
+		buildWordsToCodeMap();
 
 		output_names[0] = buildCompressedString().toString();
-		System.out.println(output_names[0]);
 	}
 
 	// seperate words from punctuation chars
-	// count how many times each word appeares in the string
 	private void countWordFrequency(String[] words) {
 		for (int i = 0; i < words.length; i++) {
-			String subWord = words[i];
+			String currentWord = words[i];
 			int endIndex = 0;
 			// add spaces that were lost during the initial split
-			if (subWord.equals(""))
+			if (currentWord.equals(""))
 				allWords.add(" ");
 			// check if word ends with char that is not alphabet
-			else if (subWord.length() != 0 && !Character.isLetter(subWord.charAt(subWord.length() - 1))) {
-				for (int j = 0; j < subWord.length(); j++) {
+			else if (currentWord.length() != 0 && !Character.isLetter(currentWord.charAt(currentWord.length() - 1))) {
+				for (int j = 0; j < currentWord.length(); j++) {
 					// go through word and find index of first non abc char
-					if (!Character.isLetter(subWord.charAt(j))) {
+					if (!Character.isLetter(currentWord.charAt(j))) {
 						if (j == 0) {
-							endIndex = subWord.length(); // the whole word is non abc
+							endIndex = currentWord.length(); // the whole word is non abc
 							break;
 						} else {
 							endIndex = j; // first index of the non abc part of the word
@@ -62,38 +60,41 @@ public class StringEncoderDecoder implements Compressor {
 						}
 					}
 				}
-				allWords.add(subWord.substring(0, endIndex)); // the word itself
-				allWords.add(subWord.substring(endIndex)); // the tailling non abc chars
+				allWords.add(currentWord.substring(0, endIndex)); // the word itself
+				allWords.add(currentWord.substring(endIndex)); // the tailling non abc chars
 			} else {
-				allWords.add(subWord);
+				allWords.add(currentWord);
 			}
 		}
-		// fill map of all the words(key) and count them(value)
+	}
+
+	// fill map of all the words(key) and count them(value)
+	private void fillWordsCountMap() {
+		// put in function
 		for (int i = 0; i < allWords.size(); i++) {
 			// the word is at least 3 chars that are abc
 			if (allWords.get(i).length() >= 3 && Character.isLetter(allWords.get(i).charAt(0))) {
 				// if the word is not there, add it
-				if (!words_count_map.containsKey(allWords.get(i))) {
-					words_count_map.put(allWords.get(i), 1);
+				if (!wordsCountMap.containsKey(allWords.get(i))) {
+					wordsCountMap.put(allWords.get(i), 1);
 				} else {
 					// the word exists in the map, increment occurence count
-					words_count_map.put(allWords.get(i), words_count_map.get(allWords.get(i)) + 1);
+					wordsCountMap.put(allWords.get(i), wordsCountMap.get(allWords.get(i)) + 1);
 				}
 			}
 		}
 	}
 
-	// give the most common 200 words their coded word
-	private void createIndexMapping() {
-		// sort the map to have the words with the most appearances be at the top of
-		// map.
-		// convert map to list
-		ArrayList<Map.Entry<String, Integer>> list = new ArrayList<>(words_count_map.entrySet());
+	// give the most common 200 words their coded value
+	private void buildWordsToCodeMap() {
+		// sort the map to have the words with the most occurences be at the top
+		// convert map to list for easy access and sorting
+		ArrayList<Map.Entry<String, Integer>> list = new ArrayList<>(wordsCountMap.entrySet());
 		list.sort(Collections.reverseOrder(Map.Entry.comparingByValue()));
 
 		// insert to map with encoding
 		for (int i = 0; i < list.size() && i < 200; i++) {
-			most_common_words.put(list.get(i).getKey(), i + 1);
+			wordsToCodeMap.put(list.get(i).getKey(), i + 1);
 		}
 	}
 
@@ -104,9 +105,9 @@ public class StringEncoderDecoder implements Compressor {
 		char specialChar_2 = 223; // ß
 		for (int i = 0; i < allWords.size(); i++) {
 			String word = allWords.get(i);
-			if (most_common_words.containsKey(word)) {
+			if (wordsToCodeMap.containsKey(word)) {
 				output.append((char) specialChar_1);
-				output.append(most_common_words.get(word));
+				output.append(wordsToCodeMap.get(word));
 			} else {
 				output.append((char) specialChar_2);
 				output.append(word);
@@ -118,18 +119,20 @@ public class StringEncoderDecoder implements Compressor {
 	@Override
 	public void Decompress(String[] input_names, String[] output_names) {
 		// convert map to list for easy access of a key by value
-		ArrayList<Map.Entry<String, Integer>> list = new ArrayList<>(most_common_words.entrySet());
+		ArrayList<Map.Entry<String, Integer>> common_words_list = new ArrayList<>(wordsToCodeMap.entrySet());
+		common_words_list.sort(Map.Entry.comparingByValue());
+
 		String[] codedWords = output_names[0].split("[Þß]+");
 		StringBuilder output = new StringBuilder();
 		boolean nextIsLetter = true; // flag
-		
+
 		for (int i = 1; i < codedWords.length; i++) {
 			String word = codedWords[i];
 			if (i + 1 < codedWords.length)
-				nextIsLetter = nextCharIsLetter(codedWords[i + 1], list);
+				nextIsLetter = nextCharIsLetter(codedWords[i + 1], common_words_list);
 			try { // try parsing the string to int, if failed -> not coded word
 				int value = Integer.parseInt(word);
-				output.append(list.get(value - 1).getKey());
+				output.append(common_words_list.get(value - 1).getKey());
 				if (nextIsLetter)
 					output.append(" ");
 
@@ -139,7 +142,7 @@ public class StringEncoderDecoder implements Compressor {
 					output.append(" ");
 			}
 		}
-		System.out.println(output_names[0]);
+		output_names[0] = output.toString();
 	}
 
 	// check if the next char is a letter from the abc

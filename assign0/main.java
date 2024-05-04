@@ -9,11 +9,11 @@ public class main {
 		String[] t = new String[1];
 
 		s[0] = "romeo , and then, and juliet\r\n";
-		
+		System.out.println(s[0]);
 		str.Compress(s, t);
-		System.out.println(s[0]);
+		System.out.println(t[0]);
 		str.Decompress(s, t);
-		System.out.println(s[0]);
+		System.out.println(t[0]);
 
 	}
 

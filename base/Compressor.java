@@ -1,4 +1,10 @@
 package base;
+/**
+ * Assignment 0
+ * Submitted by: 
+ * Shani Zahavi 	ID# 211305271
+ * Leon Petrov 	ID# 314821521
+ */
 
 public interface Compressor
 {
